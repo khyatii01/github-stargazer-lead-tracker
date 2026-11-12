@@ -35,4 +35,4 @@ Notify a Discord channel when a newly created GitHub repository star belongs to 
 
 - Automatic creation of the GitHub webhook, because repository admin access is account-specific.
 - Shipping a live Discord screenshot without the owner's Discord webhook.
-- Shipping an OpenAI credential inside the workflow export.
+- Shipping an LLM credential inside the workflow export.

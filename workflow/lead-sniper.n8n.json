@@ -12,7 +12,10 @@
       "name": "GitHub Star Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [0, 300],
+      "position": [
+        0,
+        300
+      ],
       "webhookId": "8ae98929-d527-4e5b-8763-0ab5f92270aa"
     },
     {
@@ -23,7 +26,10 @@
       "name": "Parse & Validate Star Event",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [240, 300]
+      "position": [
+        240,
+        300
+      ]
     },
     {
       "parameters": {
@@ -53,7 +59,10 @@
       "name": "Fetch GitHub User Profile",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [500, 300],
+      "position": [
+        500,
+        300
+      ],
       "retryOnFail": true,
       "maxTries": 3,
       "waitBetweenTries": 2000
@@ -95,16 +104,19 @@
       "name": "High-Value Lead?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [760, 300]
+      "position": [
+        760,
+        300
+      ]
     },
     {
       "parameters": {
         "resource": "chat",
         "modelId": {
           "__rl": true,
-          "value": "gpt-4o-mini",
+          "value": "gemini-1.5-flash",
           "mode": "list",
-          "cachedResultName": "GPT-4o mini"
+          "cachedResultName": "Gemini 1.5 Flash"
         },
         "messages": {
           "values": [
@@ -118,20 +130,26 @@
         }
       },
       "id": "b50b845e-c462-4c36-9acf-e0619e1e97b5",
-      "name": "OpenAI - Write Sales Pitch",
-      "type": "@n8n/n8n-nodes-langchain.openAi",
-      "typeVersion": 1.8,
-      "position": [1020, 220]
+      "name": "Google Gemini - Write Sales Pitch",
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        1020,
+        220
+      ]
     },
     {
       "parameters": {
-        "jsCode": "const profile = $('Fetch GitHub User Profile').item.json;\nconst event = $('Parse & Validate Star Event').item.json;\nconst pitch = String($json.response ?? $json.text ?? $json.content ?? $json.candidates?.[0]?.content?.parts?.[0]?.text ?? $json.parts?.[0]?.text ?? $json.message?.content ?? $json.output_text ?? '').replace(/\\s+/g, ' ').trim();\nif (!pitch) throw new Error('AI node returned an empty sales pitch');\n\nconst trimTo = (value, max) => {\n  const text = String(value ?? '').trim();\n  return text.length <= max ? text : text.slice(0, max - 3) + '...';\n};\n\nreturn [{\n  json: {\n    username: 'Lead Sniper',\n    embeds: [{\n      title: 'High-Value GitHub Star Detected',\n      url: profile.html_url || `https://github.com/${profile.login}`,\n      description: `**${trimTo(profile.name || profile.login, 120)}** (@${profile.login}) starred **${trimTo(event.repository, 150)}**.`,\n      color: 5793266,\n      thumbnail: profile.avatar_url ? { url: profile.avatar_url } : undefined,\n      fields: [\n        { name: 'Bio', value: trimTo(profile.bio || 'Not provided', 1024), inline: false },\n        { name: 'Company', value: trimTo(profile.company || 'Not provided', 1024), inline: true },\n        { name: 'Influence', value: `${profile.followers} followers | ${profile.public_repos} public repos`, inline: true },\n        { name: 'AI Sales Pitch', value: trimTo(pitch, 1024), inline: false }\n      ],\n      footer: { text: 'Lead Sniper - automated by n8n' }\n    }]\n  }\n}];"
+        "jsCode": "const profile = $('Fetch GitHub User Profile').item.json;\nconst event = $('Parse & Validate Star Event').item.json;\n\nconst extractText = (val) => {\n  if (typeof val === 'string') return val;\n  if (!val || typeof val !== 'object') return '';\n  if (typeof val.text === 'string') return val.text;\n  if (typeof val.response?.text === 'string') return val.response.text;\n  if (typeof val.response === 'string') return val.response;\n  if (typeof val.content === 'string') return val.content;\n  if (Array.isArray(val.content)) return val.content.map((c) => (typeof c === 'string' ? c : c?.text ?? '')).join(' ');\n  if (Array.isArray(val.candidates) && val.candidates[0]?.content?.parts?.[0]?.text) return val.candidates[0].content.parts[0].text;\n  if (Array.isArray(val.response?.candidates) && val.response.candidates[0]?.content?.parts?.[0]?.text) return val.response.candidates[0].content.parts[0].text;\n  if (Array.isArray(val.parts) && val.parts[0]?.text) return val.parts[0].text;\n  if (typeof val.message?.content === 'string') return val.message.content;\n  if (typeof val.output_text === 'string') return val.output_text;\n  for (const k of Object.keys(val)) {\n    const r = extractText(val[k]);\n    if (r && r !== '[object Object]') return r;\n  }\n  return '';\n};\n\nconst pitch = extractText($json).replace(/\\s+/g, ' ').trim();\nif (!pitch || pitch === '[object Object]') throw new Error('AI node returned an empty sales pitch');\n\nconst trimTo = (value, max) => {\n  const text = String(value ?? '').trim();\n  return text.length <= max ? text : text.slice(0, max - 3) + '...';\n};\n\nreturn [{\n  json: {\n    username: 'Lead Sniper',\n    embeds: [{\n      title: 'High-Value GitHub Star Detected',\n      url: profile.html_url || `https://github.com/${profile.login}`,\n      description: `**${trimTo(profile.name || profile.login, 120)}** (@${profile.login}) starred **${trimTo(event.repository, 150)}**.`,\n      color: 5793266,\n      thumbnail: profile.avatar_url ? { url: profile.avatar_url } : undefined,\n      fields: [\n        { name: 'Bio', value: trimTo(profile.bio || 'Not provided', 1024), inline: false },\n        { name: 'Company', value: trimTo(profile.company || 'Not provided', 1024), inline: true },\n        { name: 'Influence', value: `${profile.followers} followers | ${profile.public_repos} public repos`, inline: true },\n        { name: 'AI Sales Pitch', value: trimTo(pitch, 1024), inline: false }\n      ],\n      footer: { text: 'Lead Sniper - automated by n8n' }\n    }]\n  }\n}];"
       },
       "id": "82801a7c-27d4-4883-89e5-74f420db323b",
       "name": "Build Discord Message",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1280, 220]
+      "position": [
+        1280,
+        220
+      ]
     },
     {
       "parameters": {
@@ -149,14 +167,17 @@
       "name": "Send Discord Webhook",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1540, 220],
+      "position": [
+        1540,
+        220
+      ],
       "retryOnFail": true,
       "maxTries": 3,
       "waitBetweenTries": 2000
     },
     {
       "parameters": {
-        "content": "## Setup\n1. Add an OpenAI credential to the AI node after import.\n2. Set `GITHUB_TOKEN` and `DISCORD_WEBHOOK_URL` in the self-hosted n8n environment.\n3. Activate the workflow, then register its production webhook URL for the GitHub **Star** event.\n4. The false output of **High-Value Lead?** intentionally stops the flow.",
+        "content": "## Setup\n1. Add a Google Gemini credential to the AI node after import.\n2. Set `GITHUB_TOKEN` and `DISCORD_WEBHOOK_URL` in the self-hosted n8n environment.\n3. Activate the workflow, then register its production webhook URL for the GitHub **Star** event.\n4. The false output of **High-Value Lead?** intentionally stops the flow.",
         "height": 300,
         "width": 460
       },
@@ -164,7 +185,10 @@
       "name": "Setup Notes",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [740, 520]
+      "position": [
+        740,
+        520
+      ]
     }
   ],
   "pinData": {},
@@ -206,7 +230,7 @@
       "main": [
         [
           {
-            "node": "OpenAI - Write Sales Pitch",
+            "node": "Google Gemini - Write Sales Pitch",
             "type": "main",
             "index": 0
           }
@@ -214,7 +238,7 @@
         []
       ]
     },
-    "OpenAI - Write Sales Pitch": {
+    "Google Gemini - Write Sales Pitch": {
       "main": [
         [
           {

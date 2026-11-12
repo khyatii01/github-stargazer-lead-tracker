@@ -31,16 +31,39 @@ export function buildSalesPitchPrompt(profileInput, repository) {
 export function normalizeSalesPitch(value) {
   let candidate = value;
   if (candidate && typeof candidate === 'object') {
-    candidate = candidate.response ??
-      candidate.text ??
-      candidate.content ??
-      candidate.candidates?.[0]?.content?.parts?.[0]?.text ??
-      candidate.parts?.[0]?.text ??
-      candidate.message?.content ??
-      candidate.output_text ??
-      '';
+    if (typeof candidate.text === 'string') {
+      candidate = candidate.text;
+    } else if (typeof candidate.response?.text === 'string') {
+      candidate = candidate.response.text;
+    } else if (typeof candidate.response === 'string') {
+      candidate = candidate.response;
+    } else if (typeof candidate.content === 'string') {
+      candidate = candidate.content;
+    } else if (Array.isArray(candidate.content)) {
+      candidate = candidate.content.map((c) => (typeof c === 'string' ? c : c?.text ?? '')).join(' ');
+    } else if (Array.isArray(candidate.candidates) && candidate.candidates[0]?.content?.parts?.[0]?.text) {
+      candidate = candidate.candidates[0].content.parts[0].text;
+    } else if (Array.isArray(candidate.response?.candidates) && candidate.response.candidates[0]?.content?.parts?.[0]?.text) {
+      candidate = candidate.response.candidates[0].content.parts[0].text;
+    } else if (Array.isArray(candidate.parts) && candidate.parts[0]?.text) {
+      candidate = candidate.parts[0].text;
+    } else if (typeof candidate.message?.content === 'string') {
+      candidate = candidate.message.content;
+    } else if (typeof candidate.output_text === 'string') {
+      candidate = candidate.output_text;
+    } else {
+      for (const k of Object.keys(candidate)) {
+        try {
+          const sub = normalizeSalesPitch(candidate[k]);
+          if (sub && sub !== '[object Object]') {
+            candidate = sub;
+            break;
+          }
+        } catch { }
+      }
+    }
   }
-  if (typeof candidate !== 'string') {
+  if (typeof candidate !== 'string' || candidate === '[object Object]') {
     throw new TypeError('Sales pitch must be a string or a supported model response object');
   }
 

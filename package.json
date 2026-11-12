@@ -1,0 +1,18 @@
+{
+  "name": "github-stargazer-lead-tracker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Spec-driven n8n workflow for identifying high-value GitHub stargazers",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "test:coverage": "node --test --experimental-test-coverage test/*.test.mjs",
+    "validate": "node scripts/validate-workflow.mjs",
+    "demo": "node src/demo.mjs",
+    "mock:discord": "node src/mock-discord-server.mjs",
+    "ci": "npm run validate && npm run test:coverage && npm run demo"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
